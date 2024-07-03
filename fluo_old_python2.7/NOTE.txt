@@ -1,0 +1,24 @@
+4/14/2011
+ 
+Need to modify/update fluo program.
+
+Separate Elam and f1f2chantler.
+
+Use f1f2chantler and readf1f2a.
+
+f1f2chantler now has total cross-section and photoelectric cross-section.
+ 
+
+--modified/updated
+elam.py
+readf1f2a.py
+fluo_new.py  ( not used any more )
+fluo_panel.py
+SimpleParratt_Panel.py
+SimpleParratt.py
+
+--created
+fluo_elem.py
+fluo_det.py
+
+fluo_new splited into fluo_elem (elemental dependence), fluo_det(detection mode dependence)

@@ -1,0 +1,45 @@
+# nominal density of materials in g/cm^3
+Ag,		10.51
+Al,		2.72
+Al2O3,	3.97  # Sapphire
+Au,   19.37   
+Be,   1.848 
+BN,   2.29  # Boron Nitride
+C,   3.51   # diamond
+#C,   2.25  # graphite
+C2F4,   2.2  	# Teflon
+C3H4O2,   1.65    # PAA
+C22H10O4N2,   1.42 	 # Kapton
+CaCO3   2.71,       # Calcite
+CaF2,   3.18 	 # Fluorite
+Cr,   7.19  
+Co,   8.9   
+Cu,   8.94   
+Fe,   7.86  
+Fe2As,	6.4
+Fe2O3,   5.26    # hematite
+Ge,   5.323   
+GaAs, 5.32
+He, 0.00009		# Helium gas
+H2O,   1.0  
+Ir,   22.42  
+KAl3Si3O12H2,   2.83    # Mica
+Mn,   7.42  
+MgO, 3.58
+Ni,   8.9   
+Nb,   8.57
+Pb,   11.34   
+PbTiO3,   7.9  
+Pd,   12.16  
+Pt,   21.45  
+Rh,   12.44  
+Si,   2.33  
+SiO2,   2.2   # silica
+Sr,   2.54   
+SrTiO3,   5.12   
+Ti,   4.54  
+TiO2,   4.26    # Rutile
+V,   6.11   
+Y3Fe5O12,	5.2		# YIG
+Zn,   7.14   
+ZnO,   5.7
