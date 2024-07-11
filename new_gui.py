@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QWidget,
 )
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
