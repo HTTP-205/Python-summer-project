@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
     QSpinBox,
     QTimeEdit,
     QVBoxLayout,
+    QHBoxLayout
     QWidget,
 )
 
