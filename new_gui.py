@@ -1,28 +1,11 @@
 import sys
-
-from PyQt5.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QComboBox,
-    QDateEdit,
-    QDateTimeEdit,
-    QDial,
-    QDoubleSpinBox,
-    QFontComboBox,
-    QLabel,
-    QLCDNumber,
-    QLineEdit,
-    QMainWindow,
-    QProgressBar,
-    QPushButton,
-    QRadioButton,
-    QSlider,
-    QSpinBox,
-    QTimeEdit,
-    QVBoxLayout,
-    QHBoxLayout,
-    QWidget,
+import calc
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateEdit, QDateTimeEdit, QDial, QDoubleSpinBox, QFontComboBox,
+    QLabel, QLCDNumber, QLineEdit, QMainWindow, QProgressBar, QPushButton, QRadioButton, QSlider, QSpinBox, QTimeEdit, QVBoxLayout, 
+    QHBoxLayout, QWidget,
 )
+
+#calc.lcm():
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -35,20 +18,19 @@ class MainWindow(QMainWindow):
         #row 1
         r1Layout = QHBoxLayout()
         r1c1Layout = QVBoxLayout()
-        #widget = QLabel("Hello")
         Sbutton = QPushButton("Simulate!")
         Sbutton.setCheckable(False)
-        # Sbutton.clicked.connect(self.simulate) #sends signal to simulate
+        Sbutton.clicked.connect(self.simulate) #sends signal to simulate
         r1c1Layout.addWidget(Sbutton)
         Pbutton = QPushButton("Plot!")
         Pbutton.setCheckable(False)
         # Pbutton.clicked.connect(self.plot) #sends signal to plot
         r1c1Layout.addWidget(Pbutton)
         r1Layout.addLayout(r1c1Layout)
-        simPlcombBox = QComboBox()
-        simPlcombBox.addItems(["a", "b"])
+        self.simPlcombBox = QComboBox()
+        self.simPlcombBox.addItems(["b", "c", ""])
         # combBox.currentTextChanged.connect(self.simPlot) #sends text signal to simPlot
-        r1Layout.addWidget(simPlcombBox)
+        r1Layout.addWidget(self.simPlcombBox)
         mLayout.addLayout(r1Layout)
         
         #row 2
@@ -58,18 +40,18 @@ class MainWindow(QMainWindow):
 
         widget = QLabel("eV")
         r2c1Layout.addWidget(widget)
-        ELine = QLineEdit()
-        ELine.setMaxLength(10)
+        self.ELine = QLineEdit()
+        self.ELine.setMaxLength(10)
         # ELine.textEdited.connect(self.energy) #sends text signal to energy 
-        r2c1Layout.addWidget(ELine)
+        r2c1Layout.addWidget(self.ELine)
         r2Layout.addLayout(r2c1Layout)
 
         widget = QLabel("degree")
         r2c2Layout.addWidget(widget)
-        ALine = QLineEdit()
-        ALine.setMaxLength(10)
+        self.ALine = QLineEdit()
+        self.ALine.setMaxLength(10)
         # ALine.textEdited.connect(self.angle) #sends text signal to angle 
-        r2c2Layout.addWidget(ALine)
+        r2c2Layout.addWidget(self.ALine)
         r2Layout.addLayout(r2c2Layout)
 
         mLayout.addLayout(r2Layout)
@@ -230,16 +212,28 @@ class MainWindow(QMainWindow):
 
         mLayout.addLayout(r10Layout)
 
+        '''
         #random-ahh row (why is this here)
         goofycombBox = QComboBox()
         goofycombBox.addItems(["", "pee pee", "poo poo"])
         # goofycombBox.currentTextChanged.connect(self.goofy) #sends text signal to goofy
 
         mLayout.addWidget(goofycombBox)
+        '''
 
         fWidget = QWidget()
         fWidget.setLayout(mLayout)
         self.setCentralWidget(fWidget)
+
+    # - - - - - functions - - - - -
+
+    def simulate(self):
+        calcList = []
+        calcList.append(self.ELine.text())
+        calcList.append(self.ALine.text())
+        aa = calc.lcm(calcList)
+        self.simPlcombBox.setItemText(2, f"{aa}")
+            
 
 
 
