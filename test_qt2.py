@@ -7,8 +7,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow,
                              # import *
                              )
 
+import test_matplot  # import test_maplot.py to use its function
 
-# dddddddddddddddddddd
 '''
 YC, 7/11
 testing PyQt options, pressing button will read values from gui options and print
@@ -24,11 +24,11 @@ class MainWindow(QMainWindow):
         #   add text line
         text1 = QLabel('Object-1')
         self.aCombo = QComboBox()
-        self.aCombo.addItems(['Monday', 'Tuesday', 'Wednesday'])
+        self.aCombo.addItems(['Linear', 'Exponential'])
 
         #   add combo-box      
-        text2 = QLabel('Object-2')
-        self.aLineText = QLineEdit("is off day.")
+        text2 = QLabel('# of points')
+        self.aLineText = QLineEdit('10')
         
         # add checkbox 
         text3 = QLabel('Object-3')
@@ -42,7 +42,7 @@ class MainWindow(QMainWindow):
         self.aButton.clicked.connect(self.the_button_was_clicked)
 
         # text output
-        self.textOut = QLabel('')
+        self.textOut = QLabel('---')
 
         # add to widgets for layout
         widgets = [
@@ -67,18 +67,22 @@ class MainWindow(QMainWindow):
         # to take up all the space in the window by default.
         self.setCentralWidget(widget)
 
-    #   defines a function when button is pressed.
+    #   define a function when button is pressed.
     def the_button_was_clicked(self):
         # read values from LineText and ComboBox
-        aa = self.aCombo.currentText()
-        bb = self.aLineText.text()
+        aaType = self.aCombo.currentText()  # return selected text
+        aaInd = self.aCombo.currentIndex()  # return selected index, 0,1...
+        aaInd = str(aaInd)                  # make integer to string
+        bb = self.aLineText.text()          # read text from line text
         cc = self.aCheckBox.checkState()  # off/on = 0/2 
-        # print
-        output = aa + ', ' + bb + ', ' + str(cc)
+        # print out to the command line
+        output = aaType + aaInd + ', ' + bb + ', ' + str(cc)
         print (output)
         # display in textOut
         self.textOut.setText(output)
         self.textOut.setStyleSheet('background-color:cyan')  # change color
+        # call a funtion in another py file and send option.
+        test_matplot.plot_xy(aaType, int(bb))  
 
 
 # make a window with objects defined above
