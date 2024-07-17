@@ -1,17 +1,53 @@
 import sys
 import calc
+import pyqtgraph as pg
+# from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateEdit, QDateTimeEdit, QDial, QDoubleSpinBox, QFontComboBox,
     QLabel, QLCDNumber, QLineEdit, QMainWindow, QProgressBar, QPushButton, QRadioButton, QSlider, QSpinBox, QTimeEdit, QVBoxLayout, 
-    QHBoxLayout, QWidget,
+    QHBoxLayout, QWidget, 
 )
 
-#calc.lcm():
+time = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+temperature = [30, 32, 34, 32, 33, 31, 29, 32, 35, 45]
 
+#calc.lcm():
 class MainWindow(QMainWindow):
-    def __init__(self):
-        super(MainWindow, self).__init__()
+ def __init__(self):
+        super().__init__()
 
         self.setWindowTitle("SimFluo: fluorescence spectrum simulation")
+
+        ButtonLayout = QHBoxLayout()
+        GraphLayout = QVBoxLayout()
+        mainLayout = QHBoxLayout()
+
+        Plot = QPushButton("Plot")
+        # Plot.clicked.connect(self.plot)
+        ShowTable = QPushButton("Show Table")
+        # ShowTable.clicked.connect(self.showTable)
+        ChangePara = QPushButton("Change Parameters")
+        # ChangePara.clicked.connect(self.changePara)
+        ButtonLayout.addWidget(Plot)
+        ButtonLayout.addWidget(ShowTable)
+        ButtonLayout.addWidget(ChangePara)
+        GraphLayout.addLayout(ButtonLayout)
+
+
+        # Temperature vs time plot
+        self.plot_graph = pg.PlotWidget()
+        GraphLayout.addWidget(self.plot_graph)
+
+        fWidget = QWidget()
+        fWidget.setLayout(GraphLayout)
+        self.setCentralWidget(fWidget)
+        self.plot_graph.setBackground("w")
+        self.plot_graph.plot(time, temperature) 
+
+class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
+    def __init__(self):
+        super(SettingsWindow, self).__init__()
+
+        self.setWindowTitle("Change Parameters")
 
         mLayout = QVBoxLayout()
 
@@ -241,6 +277,6 @@ class MainWindow(QMainWindow):
 
 
 app = QApplication(sys.argv)
-window = MainWindow()
+window = MainWindow() 
 window.show()
 app.exec()
