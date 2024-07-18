@@ -1,6 +1,7 @@
 import sys
 
 import pyqtgraph as pg
+from pyqtgraph import PlotWidget, plot
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
@@ -286,8 +287,8 @@ class MainWindow(QMainWindow):
         fWidget = QWidget()
         fWidget.setLayout(mLayout)
 
-        gWidget = QWidget()
-        gWidget.setLayout(m2Layout)
+        # gWidget = QWidget()
+        # gWidget.setLayout(m2Layout)
 
 
 
@@ -295,13 +296,14 @@ class MainWindow(QMainWindow):
         btn.pressed.connect(self.activate_tab_1)
         button_layout.addWidget(btn)
         self.stacklayout.addWidget(fWidget)
+        
 
         self.graphwidget = QLabel("Hello")
         # graphwidget.setPixmap(QPixmap('plottt.jpg'))
         # graphwidget.setScaledContents(True)
 
         self.plot_graph = pg.PlotWidget()
-        self.setCentralWidget(self.plot_graph)
+        #self.setCentralWidget(self.plot_graph)
         time = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         temperature = [30, 32, 34, 32, 33, 31, 29, 32, 35, 30]
         self.plot_graph.plot(time, temperature)
@@ -312,6 +314,17 @@ class MainWindow(QMainWindow):
         #label axises
         self.plot_graph.setLabel("left", "Temperature (°C)")
         self.plot_graph.setLabel("bottom", "Time (min)")
+
+        #cursor_tracking
+        # +++ vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        self.label = pg.TextItem(text="Abscissa: {} \nOrdinate: {}".format(0, 0))
+        self.plot_graph.addItem(self.label)
+        
+        self.setMouseTracking(True)
+        self.plot_graph.scene().sigMouseMoved.connect(self.onMouseMoved)
+        
+   
+        # +++ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 
@@ -374,6 +387,13 @@ class MainWindow(QMainWindow):
         self.num200 = int(self.ALine.text())
         str200 = str(self.num200)
         self.graphwidget.setText(str200)
+
+    def onMouseMoved(self, evt):
+        if self.plot_graph.plotItem.vb.mapSceneToView(evt):
+            point =self.plot_graph.plotItem.vb.mapSceneToView(evt)
+            self.label.setHtml(
+                "<p style='color:white'>Abscissa： {0} <br> Ordinate: {1}</p>".\
+                format(point.x(), point.y()))
 
 
 
