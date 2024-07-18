@@ -1,5 +1,6 @@
 import sys
 
+import pyqtgraph as pg
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
@@ -299,12 +300,25 @@ class MainWindow(QMainWindow):
         # graphwidget.setPixmap(QPixmap('plottt.jpg'))
         # graphwidget.setScaledContents(True)
 
+        self.plot_graph = pg.PlotWidget()
+        self.setCentralWidget(self.plot_graph)
+        time = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        temperature = [30, 32, 34, 32, 33, 31, 29, 32, 35, 30]
+        self.plot_graph.plot(time, temperature)
+
+        #title
+        self.plot_graph.setTitle("Temperature vs Time", color="b", size="20pt")
+
+        #label axises
+        self.plot_graph.setLabel("left", "Temperature (°C)")
+        self.plot_graph.setLabel("bottom", "Time (min)")
+
 
 
         btn = QPushButton("Graph")
         btn.pressed.connect(self.activate_tab_2)
         button_layout.addWidget(btn)
-        self.stacklayout.addWidget(self.graphwidget)
+        self.stacklayout.addWidget(self.plot_graph)
 
         tablewidget = QLabel("Hello")
         tableimage = QPixmap('table.jpg')
