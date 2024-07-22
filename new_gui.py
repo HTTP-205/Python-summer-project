@@ -1,6 +1,10 @@
 import sys
 import calc
 import pyqtgraph as pg
+# import fluo_elem, fluo_det, readf1f2a
+import os.path
+import os
+import time
 # from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateEdit, QDateTimeEdit, QDial, QDoubleSpinBox, QFontComboBox,
     QLabel, QLCDNumber, QLineEdit, QMainWindow, QProgressBar, QPushButton, QRadioButton, QSlider, QSpinBox, QTimeEdit, QVBoxLayout, 
@@ -10,6 +14,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateEdit, QDat
 time = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 temperature = [30, 32, 34, 32, 33, 31, 29, 32, 35, 45]
 toggle = False
+aa = ""
 
 #calc.lcm():
 class MainWindow(QMainWindow):
@@ -23,13 +28,13 @@ class MainWindow(QMainWindow):
         GraphLayout = QVBoxLayout()
         mainLayout = QHBoxLayout()
 
-        Plot = QPushButton("Plot")
-        Plot.clicked.connect(self.plot)
+        #Plot = QPushButton("Plot")
+        #Plot.clicked.connect(self.plot)
         ShowTable = QPushButton("Show Table")
         ShowTable.clicked.connect(self.showTable)
         ChangePara = QPushButton("Change Parameters")
         ChangePara.clicked.connect(self.changePara)
-        ButtonLayout.addWidget(Plot)
+        #ButtonLayout.addWidget(Plot)
         ButtonLayout.addWidget(ShowTable)
         ButtonLayout.addWidget(ChangePara)
         GraphLayout.addLayout(ButtonLayout)
@@ -54,32 +59,36 @@ class MainWindow(QMainWindow):
         if not self.w.isVisible():
             self.w.show()
     
-    def plot(self, checked):
+    def plot(self):
         global temperature
         global toggle
 
         if toggle is True: 
-            temperature = [30, 32, 34, 32, 33, 31, 29, 32, 35, 45]
             toggle = False
             self.plot_graph.clear()
             self.plot_graph.plot(time, temperature)
-        else:
             temperature = [20, 22, 45, 38, 25, 22, 23, 41, 39, 28]
+        else:
             toggle = True
             self.plot_graph.clear()
             self.plot_graph.plot(time, temperature)
+            temperature = [30, 32, 34, 32, 33, 31, 29, 32, 35, 45]
     
     def showTable(self, checked):
         if not self.tableWidget.isVisible():
+            global aa
+            self.tableWidget.setItem(0,0, QTableWidgetItem(f"{aa}"))
             self.tableWidget.show()
         else:
             self.tableWidget.hide()
+
 
     def createTable(self):
         self.tableWidget = QTableWidget()
         self.tableWidget.setRowCount(4)
         self.tableWidget.setColumnCount(2)
-        self.tableWidget.setItem(0,0, QTableWidgetItem("Cell (1,1)"))
+        global aa
+        self.tableWidget.setItem(0,0, QTableWidgetItem(aa))
         self.tableWidget.setItem(0,1, QTableWidgetItem("Cell (1,2)"))
         self.tableWidget.setItem(1,0, QTableWidgetItem("Cell (2,1)"))
         self.tableWidget.setItem(1,1, QTableWidgetItem("Cell (2,2)"))
@@ -94,7 +103,7 @@ class MainWindow(QMainWindow):
 
 class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
     def __init__(self):
-        super(SettingsWindow, self).__init__()
+        super().__init__()
 
         self.setWindowTitle("Change Parameters")
 
@@ -109,7 +118,7 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         r1c1Layout.addWidget(Sbutton)
         Pbutton = QPushButton("Plot!")
         Pbutton.setCheckable(False)
-        # Pbutton.clicked.connect(self.plot) #sends signal to plot
+        Pbutton.clicked.connect(self.plot) #sends signal to plot
         r1c1Layout.addWidget(Pbutton)
         r1Layout.addLayout(r1c1Layout)
         self.simPlcombBox = QComboBox()
@@ -297,15 +306,6 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
 
         mLayout.addLayout(r10Layout)
 
-        '''
-        #random-ahh row (why is this here)
-        goofycombBox = QComboBox()
-        goofycombBox.addItems(["", "pee pee", "poo poo"])
-        # goofycombBox.currentTextChanged.connect(self.goofy) #sends text signal to goofy
-
-        mLayout.addWidget(goofycombBox)
-        '''
-
         self.setLayout(mLayout)
 
     # - - - - - functions - - - - -
@@ -314,11 +314,18 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         calcList = []
         calcList.append(self.ELine.text())
         calcList.append(self.ALine.text())
+        global aa
         aa = calc.lcm(calcList)
-        self.simPlcombBox.setItemText(2, f"{aa}")
+        #sub in aa for all the other global variables
+
+    def plot(self):
+        global temperature
+        window.plot()
+
+
             
 
 app = QApplication(sys.argv)
-window = MainWindow() 
+window = MainWindow()
 window.show()
 app.exec()
