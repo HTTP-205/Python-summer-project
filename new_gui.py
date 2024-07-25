@@ -5,16 +5,14 @@ import pyqtgraph as pg
 import os.path
 import os
 import time
+import numpy as np
+from PyQt5 import QtCore
 # from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateEdit, QDateTimeEdit, QDial, QDoubleSpinBox, QFontComboBox,
     QLabel, QLCDNumber, QLineEdit, QMainWindow, QProgressBar, QPushButton, QRadioButton, QSlider, QSpinBox, QTimeEdit, QVBoxLayout, 
     QHBoxLayout, QWidget, QTableWidget,QTableWidgetItem
 )
 
-time = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-temperature = [30, 32, 34, 32, 33, 31, 29, 32, 35, 45]
-toggle = False
-aa = ""
 
 #calc.lcm():
 class MainWindow(QMainWindow):
@@ -53,31 +51,28 @@ class MainWindow(QMainWindow):
         fWidget.setLayout(mainLayout)
         self.setCentralWidget(fWidget)
         self.plot_graph.setBackground("w")
-        self.plot_graph.plot(time, temperature)
 
     def changePara(self, checked):
         if not self.w.isVisible():
             self.w.show()
     
     def plot(self):
-        global temperature
-        global toggle
-
-        if toggle is True: 
-            toggle = False
-            self.plot_graph.clear()
-            self.plot_graph.plot(time, temperature)
-            temperature = [20, 22, 45, 38, 25, 22, 23, 41, 39, 28]
-        else:
-            toggle = True
-            self.plot_graph.clear()
-            self.plot_graph.plot(time, temperature)
-            temperature = [30, 32, 34, 32, 33, 31, 29, 32, 35, 45]
+        infile = 'simSpectrum_plot.txt'
+        xx, yy = np.loadtxt (infile, unpack=True)  # "import numpy as np" added at the beginning of the file.
+        # now xx, yy are arrays with x and y values. 
+        pen = pg.mkPen(color=(255, 0, 0), width=5)#, style=QtCore.Qt.DashLine) 
+        self.plot_graph.clear()
+        self.plot_graph.plot(xx, yy, pen=pen)
+        infile = 'simSpectrum_table.txt'
+        x, y, z = np.loadtxt (infile, dtype='str', unpack=True)
+        print(x)
+        print(y)
+        print(z)
+        
     
     def showTable(self, checked):
         if not self.tableWidget.isVisible():
-            global aa
-            self.tableWidget.setItem(0,0, QTableWidgetItem(f"{aa}"))
+            self.createTable()
             self.tableWidget.show()
         else:
             self.tableWidget.hide()
@@ -85,19 +80,16 @@ class MainWindow(QMainWindow):
 
     def createTable(self):
         self.tableWidget = QTableWidget()
-        self.tableWidget.setRowCount(4)
-        self.tableWidget.setColumnCount(2)
-        global aa
-        self.tableWidget.setItem(0,0, QTableWidgetItem(aa))
-        self.tableWidget.setItem(0,1, QTableWidgetItem("Cell (1,2)"))
+        self.tableWidget.setColumnCount(3)
+        self.tableWidget.setItem(0,0, QTableWidgetItem("Emission"))
+        self.tableWidget.setItem(0,1, QTableWidgetItem("Energy (eV)"))
+        self.tableWidget.setItem(0,2, QTableWidgetItem("Intensity"))
         self.tableWidget.setItem(1,0, QTableWidgetItem("Cell (2,1)"))
         self.tableWidget.setItem(1,1, QTableWidgetItem("Cell (2,2)"))
         self.tableWidget.setItem(2,0, QTableWidgetItem("Cell (3,1)"))
         self.tableWidget.setItem(2,1, QTableWidgetItem("Cell (3,2)"))
         self.tableWidget.setItem(3,0, QTableWidgetItem("Cell (4,1)"))
         self.tableWidget.setItem(3,1, QTableWidgetItem("Cell (4,2)"))
-
-
 
 
 
@@ -132,18 +124,20 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         r2c1Layout = QVBoxLayout()
         r2c2Layout = QVBoxLayout()
 
-        widget = QLabel("eV")
+        widget = QLabel("Incident x-ray energy (eV)")
         r2c1Layout.addWidget(widget)
         self.ELine = QLineEdit()
         self.ELine.setMaxLength(10)
+        self.ELine.setText("7500")
         # ELine.textEdited.connect(self.energy) #sends text signal to energy 
         r2c1Layout.addWidget(self.ELine)
         r2Layout.addLayout(r2c1Layout)
 
-        widget = QLabel("degree")
+        widget = QLabel("Incident x-ray angle (Deg.)")
         r2c2Layout.addWidget(widget)
         self.ALine = QLineEdit()
         self.ALine.setMaxLength(10)
+        self.ALine.setText("45.")
         # ALine.textEdited.connect(self.angle) #sends text signal to angle 
         r2c2Layout.addWidget(self.ALine)
         r2Layout.addLayout(r2c2Layout)
@@ -152,23 +146,24 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
 
         #row 3
         r3Layout = QVBoxLayout()
-        widget = QLabel("atomic or weight")
+        widget = QLabel("in atomic fraction or weight fraction")
         r3Layout.addWidget(widget)
-        AorWcombBox = QComboBox()
-        AorWcombBox.addItems(["a", "b"])
+        self.AorWcombBox = QComboBox()
+        self.AorWcombBox.addItems(["atomic fraction", "weight fraction"])
         # AorWcombBox.currentTextChanged.connect(self.AorW) #sends text signal to AorW
-        r3Layout.addWidget(AorWcombBox)
+        r3Layout.addWidget(self.AorWcombBox)
 
         mLayout.addLayout(r3Layout)
 
         #row 4
         r4Layout = QVBoxLayout()
-        widget = QLabel("elemental concentrations")
+        widget = QLabel("Elements and concentrations (ppm of top substrate material)")
         r4Layout.addWidget(widget)
-        ElConcLine = QLineEdit()
-        ElConcLine.setMaxLength(10)
+        self.ElConcLine = QLineEdit()
+        self.ElConcLine.setMaxLength(10)
+        self.ElConcLine.setText("La 10 Ce 10 Nd 10")
         # ElConcLine.textEdited.connect(self.ElConc) #sends text signal to energy 
-        r4Layout.addWidget(ElConcLine)
+        r4Layout.addWidget(self.ElConcLine)
 
         mLayout.addLayout(r4Layout)
 
@@ -180,26 +175,29 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
 
         widget = QLabel("Top Substrate Material")
         r5c1Layout.addWidget(widget)
-        TopMatLine = QLineEdit()
-        TopMatLine.setMaxLength(10)
+        self.TopMatLine = QLineEdit()
+        self.TopMatLine.setMaxLength(10)
+        self.TopMatLine.setText("CaCO3")
         # TopMatLine.textEdited.connect(self.TopMat) #sends text signal to TopMat
-        r5c1Layout.addWidget(TopMatLine)
+        r5c1Layout.addWidget(self.TopMatLine)
         r5Layout.addLayout(r5c1Layout)
 
-        widget = QLabel("density")
+        widget = QLabel("Density (g/cc)")
         r5c2Layout.addWidget(widget)
-        TopMatDensLine = QLineEdit()
-        TopMatDensLine.setMaxLength(10)
+        self.TopMatDensLine = QLineEdit()
+        self.TopMatDensLine.setMaxLength(10)
+        self.TopMatDensLine.setText("2.71")
         # TopMatDensLine.textEdited.connect(self.TopMatDens) #sends text signal to TopMatDens
-        r5c2Layout.addWidget(TopMatDensLine)
+        r5c2Layout.addWidget(self.TopMatDensLine)
         r5Layout.addLayout(r5c2Layout)
 
-        widget = QLabel("thickness")
+        widget = QLabel("Thickness (cm)")
         r5c3Layout.addWidget(widget)
-        TopMatThickLine = QLineEdit()
-        TopMatThickLine.setMaxLength(10)
+        self.TopMatThickLine = QLineEdit()
+        self.TopMatThickLine.setMaxLength(10)
+        self.TopMatThickLine.setText("0.001")
         # TopMatThickLine.textEdited.connect(self.TopMatThick) #sends text signal to TopMatThick
-        r5c3Layout.addWidget(TopMatThickLine)
+        r5c3Layout.addWidget(self.TopMatThickLine)
         r5Layout.addLayout(r5c3Layout)
 
         mLayout.addLayout(r5Layout)
@@ -212,26 +210,29 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
 
         widget = QLabel("Bottom Substrate Material")
         r6c1Layout.addWidget(widget)
-        BotMatLine = QLineEdit()
-        BotMatLine.setMaxLength(10)
+        self.BotMatLine = QLineEdit()
+        self.BotMatLine.setMaxLength(10)
+        self.BotMatLine.setText("Al2O3")
         # BotMatLine.textEdited.connect(self.BotMat) #sends text signal to BotMat
-        r6c1Layout.addWidget(BotMatLine)
+        r6c1Layout.addWidget(self.BotMatLine)
         r6Layout.addLayout(r6c1Layout)
 
-        widget = QLabel("density")
+        widget = QLabel("Density (g/cc)")
         r6c2Layout.addWidget(widget)
-        BotMatDensLine = QLineEdit()
-        BotMatDensLine.setMaxLength(10)
+        self.BotMatDensLine = QLineEdit()
+        self.BotMatDensLine.setMaxLength(10)
+        self.BotMatDensLine.setText("3.97")
         # BotMatDensLine.textEdited.connect(self.BotMatDens) #sends text signal to BotMatDens
-        r6c2Layout.addWidget(BotMatDensLine)
+        r6c2Layout.addWidget(self.BotMatDensLine)
         r6Layout.addLayout(r6c2Layout)
 
-        widget = QLabel("thickness")
+        widget = QLabel("Thickness (cm)")
         r6c3Layout.addWidget(widget)
-        BotMatThickLine = QLineEdit()
-        BotMatThickLine.setMaxLength(10)
+        self.BotMatThickLine = QLineEdit()
+        self.BotMatThickLine.setMaxLength(10)
+        self.BotMatThickLine.setText("0.001")
         # BotMatThickLine.textEdited.connect(self.BotMatThick) #sends text signal to BotMatThick
-        r6c3Layout.addWidget(BotMatThickLine)
+        r6c3Layout.addWidget(self.BotMatThickLine)
         r6Layout.addLayout(r6c3Layout)
 
         mLayout.addLayout(r6Layout)
@@ -239,10 +240,10 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         #row 7 
         r7Layout = QVBoxLayout()
         
-        widget = QLabel("Location of Fluorescence")
+        widget = QLabel("Location of fluorescence elements")
         r7Layout.addWidget(widget)
         LocFcombBox = QComboBox()
-        LocFcombBox.addItems(["a", "b"])
+        LocFcombBox.addItems(["All"])
         # LocFcombBox.currentTextChanged.connect(self.LocF) #sends text signal to LocF
         r7Layout.addWidget(LocFcombBox)
 
@@ -254,7 +255,7 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         widget = QLabel("He Path Used?")
         r8Layout.addWidget(widget)
         HePcombBox = QComboBox()
-        HePcombBox.addItems(["a", "b"])
+        HePcombBox.addItems(["No", "Yes"])
         # HePcombBox.currentTextChanged.connect(self.HeP) #sends text signal to HeP
         r8Layout.addWidget(HePcombBox)
 
@@ -265,18 +266,20 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         r9c1Layout = QVBoxLayout()
         r9c2Layout = QVBoxLayout()
 
-        widget = QLabel("Al")
+        widget = QLabel("# of Al film (1.5 mil)")
         r9c1Layout.addWidget(widget)
         AlLine = QLineEdit()
         AlLine.setMaxLength(10)
+        AlLine.setText("0")
         # AlLine.textEdited.connect(self.Al) #sends signal to Al
         r9c1Layout.addWidget(AlLine)
         r9Layout.addLayout(r9c1Layout)
 
-        widget = QLabel("Kr")
+        widget = QLabel("# of Kapton film (0.3 mil)")
         r9c2Layout.addWidget(widget)
         KrLine = QLineEdit()
         KrLine.setMaxLength(10)
+        KrLine.setText("0")
         # KrLine.textEdited.connect(self.Kr) #sends signal to Kr
         r9c2Layout.addWidget(KrLine)
         r9Layout.addLayout(r9c2Layout)
@@ -288,18 +291,19 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         r10c1Layout = QVBoxLayout()
         r10c2Layout = QVBoxLayout()
 
-        widget = QLabel("Vortex")
+        widget = QLabel("Vortex detector distance (cm)")
         r10c1Layout.addWidget(widget)
         VortexLine = QLineEdit()
         VortexLine.setMaxLength(10)
+        VortexLine.setText("6.0")
         # VortexLine.textEdited.connect(self.Vortex) #sends signal to Vortex
         r10c1Layout.addWidget(VortexLine)
         r10Layout.addLayout(r10c1Layout)
 
-        widget = QLabel("Detector")
+        widget = QLabel("Detector collimator")
         r10c2Layout.addWidget(widget)
         DetcombBox = QComboBox()
-        DetcombBox.addItems(["a", "b"])
+        DetcombBox.addItems(["WD60mm (XRM)"])
         # DetcombBox.currentTextChanged.connect(self.Detector) #sends text signal to Det
         r10c2Layout.addWidget(DetcombBox)
         r10Layout.addLayout(r10c2Layout)
@@ -323,7 +327,6 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         window.plot()
 
 
-            
 
 app = QApplication(sys.argv)
 window = MainWindow()
