@@ -63,11 +63,6 @@ class MainWindow(QMainWindow):
         pen = pg.mkPen(color=(255, 0, 0), width=5)#, style=QtCore.Qt.DashLine) 
         self.plot_graph.clear()
         self.plot_graph.plot(xx, yy, pen=pen)
-        infile = 'simSpectrum_table.txt'
-        x, y, z = np.loadtxt (infile, dtype='str', unpack=True)
-        print(x)
-        print(y)
-        print(z)
         
     
     def showTable(self, checked):
@@ -81,15 +76,19 @@ class MainWindow(QMainWindow):
     def createTable(self):
         self.tableWidget = QTableWidget()
         self.tableWidget.setColumnCount(3)
+        self.tableWidget.setRowCount(75)
         self.tableWidget.setItem(0,0, QTableWidgetItem("Emission"))
         self.tableWidget.setItem(0,1, QTableWidgetItem("Energy (eV)"))
         self.tableWidget.setItem(0,2, QTableWidgetItem("Intensity"))
-        self.tableWidget.setItem(1,0, QTableWidgetItem("Cell (2,1)"))
-        self.tableWidget.setItem(1,1, QTableWidgetItem("Cell (2,2)"))
-        self.tableWidget.setItem(2,0, QTableWidgetItem("Cell (3,1)"))
-        self.tableWidget.setItem(2,1, QTableWidgetItem("Cell (3,2)"))
-        self.tableWidget.setItem(3,0, QTableWidgetItem("Cell (4,1)"))
-        self.tableWidget.setItem(3,1, QTableWidgetItem("Cell (4,2)"))
+        infile = 'simSpectrum_table.txt'
+        Emission, Energy, Intensity = np.loadtxt (infile, dtype='str', unpack=True)
+        i = 1
+        while i < len(Emission):
+            j = i-1
+            self.tableWidget.setItem(i,0, QTableWidgetItem(Emission[j]))
+            self.tableWidget.setItem(i,1, QTableWidgetItem(Energy[j]))
+            self.tableWidget.setItem(i,2, QTableWidgetItem(Intensity[j]))
+            i+=1
 
 
 
