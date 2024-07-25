@@ -1,7 +1,13 @@
 import sys
 
+import pandas as pd
 import pyqtgraph as pg
+import os
+import os.path
+import time
 from pyqtgraph import PlotWidget, plot
+import fluo_elem, fluo_det, readf1f2a
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (
@@ -27,18 +33,9 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QWidget,
     QStackedLayout,
+    QTableView
 )
 from PyQt5.QtGui import QPalette, QColor
-
-class Color(QWidget):
-
-    def __init__(self, color):
-        super(Color, self).__init__()
-        self.setAutoFillBackground(True)
-
-        palette = self.palette()
-        palette.setColor(QPalette.Window, QColor(color))
-        self.setPalette(palette)
 
 
 class MainWindow(QMainWindow):
@@ -46,6 +43,9 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("SimFluo: Fluorescence Spectrum Simulation")
+
+        self.path=os.getcwd()   # remembers current directory
+
 
         pagelayout = QVBoxLayout()
         button_layout = QHBoxLayout()
@@ -64,18 +64,19 @@ class MainWindow(QMainWindow):
         r1c1Layout = QVBoxLayout()
         Sbutton = QPushButton("Simulate!")
         Sbutton.setCheckable(False)
-        Sbutton.clicked.connect(self.simulate) #sends signal to simulate
+        Sbutton.clicked.connect(self.OnSimulate) #sends signal to simulate
         r1c1Layout.addWidget(Sbutton)
-        Pbutton = QPushButton("Plot!")
-        Pbutton.setCheckable(False)
-        Pbutton.clicked.connect(self.plotxx) #sends signal to simulate
-        # Pbutton.clicked.connect(self.plot) #sends signal to plot
-        r1c1Layout.addWidget(Pbutton)
+#NO LONGER NEED PLOT BUTTON : SIMULATE WILL UPDATE BOTH GRAPH AND TABLE
+        # Pbutton = QPushButton("Plot!")
+        # Pbutton.setCheckable(False)
+        # Pbutton.clicked.connect(self.plotxx) #sends signal to simulate
+        # # Pbutton.clicked.connect(self.plot) #sends signal to plot
+        #r1c1Layout.addWidget(Pbutton)
         r1Layout.addLayout(r1c1Layout)
-        self.simPlcombBox = QComboBox()
-        self.simPlcombBox.addItems(["b", "c", ""])
+        self.cbLINES = QComboBox()
+        self.cbLINES.addItems(["b", "c", ""])
         # combBox.currentTextChanged.connect(self.simPlot) #sends text signal to simPlot
-        r1Layout.addWidget(self.simPlcombBox)
+        r1Layout.addWidget(self.cbLINES)
         mLayout.addLayout(r1Layout)
         
         #row 2
@@ -85,20 +86,20 @@ class MainWindow(QMainWindow):
 
         widget = QLabel("eV")
         r2c1Layout.addWidget(widget)
-        self.ELine = QLineEdit()
-        self.ELine.setMaxLength(10)
-        self.ELine.returnPressed.connect(self.onPressed)
-        # ELine.textEdited.connect(self.energy) #sends text signal to energy 
-        r2c1Layout.addWidget(self.ELine)
+        self.textENERGY = QLineEdit("7500")
+        self.textENERGY.setMaxLength(10)
+        self.textENERGY.returnPressed.connect(self.onPressed)
+        # textENERGY.textEdited.connect(self.energy) #sends text signal to energy 
+        r2c1Layout.addWidget(self.textENERGY)
         r2Layout.addLayout(r2c1Layout)
 
         widget = QLabel("degree")
         r2c2Layout.addWidget(widget)
-        self.ALine = QLineEdit()
-        self.ALine.setMaxLength(10)
-        self.ALine.returnPressed.connect(self.onPressed2)
-        # ALine.textEdited.connect(self.angle) #sends text signal to angle 
-        r2c2Layout.addWidget(self.ALine)
+        self.textANGLE = QLineEdit("45")
+        self.textANGLE.setMaxLength(10)
+        self.textANGLE.returnPressed.connect(self.onPressed2)
+        # textANGLE.textEdited.connect(self.angle) #sends text signal to angle 
+        r2c2Layout.addWidget(self.textANGLE)
         r2Layout.addLayout(r2c2Layout)
 
         mLayout.addLayout(r2Layout)
@@ -107,10 +108,10 @@ class MainWindow(QMainWindow):
         r3Layout = QVBoxLayout()
         widget = QLabel("atomic or weight")
         r3Layout.addWidget(widget)
-        AorWcombBox = QComboBox()
-        AorWcombBox.addItems(["a", "b"])
-        # AorWcombBox.currentTextChanged.connect(self.AorW) #sends text signal to AorW
-        r3Layout.addWidget(AorWcombBox)
+        self.cbPPM = QComboBox()
+        self.cbPPM.addItems(["atomic fraction", "weight fraction"])
+        # self.cbPPM.currentTextChanged.connect(self.AorW) #sends text signal to AorW
+        r3Layout.addWidget(self.cbPPM)
 
         mLayout.addLayout(r3Layout)
 
@@ -118,10 +119,10 @@ class MainWindow(QMainWindow):
         r4Layout = QVBoxLayout()
         widget = QLabel("elemental concentrations")
         r4Layout.addWidget(widget)
-        ElConcLine = QLineEdit()
-        ElConcLine.setMaxLength(10)
-        # ElConcLine.textEdited.connect(self.ElConc) #sends text signal to energy 
-        r4Layout.addWidget(ElConcLine)
+        self.textELEMENT = QLineEdit("La 10 Ce 10 Nd 10")
+        self.textELEMENT.setMaxLength(50)
+        # self.textELEMENT.textEdited.connect(self.ElConc) #sends text signal to energy 
+        r4Layout.addWidget(self.textELEMENT)
 
         mLayout.addLayout(r4Layout)
 
@@ -133,26 +134,26 @@ class MainWindow(QMainWindow):
 
         widget = QLabel("Top Substrate Material")
         r5c1Layout.addWidget(widget)
-        TopMatLine = QLineEdit()
-        TopMatLine.setMaxLength(10)
-        # TopMatLine.textEdited.connect(self.TopMat) #sends text signal to TopMat
-        r5c1Layout.addWidget(TopMatLine)
+        self.textSUBSTRATE = QLineEdit("CaCO3")
+        self.textSUBSTRATE.setMaxLength(20)
+        # self.textSUBSTRATE.textEdited.connect(self.TopMat) #sends text signal to TopMat
+        r5c1Layout.addWidget(self.textSUBSTRATE)
         r5Layout.addLayout(r5c1Layout)
 
         widget = QLabel("density")
         r5c2Layout.addWidget(widget)
-        TopMatDensLine = QLineEdit()
-        TopMatDensLine.setMaxLength(10)
-        # TopMatDensLine.textEdited.connect(self.TopMatDens) #sends text signal to TopMatDens
-        r5c2Layout.addWidget(TopMatDensLine)
+        self.textDENSITY = QLineEdit("2.71")
+        self.textDENSITY.setMaxLength(20)
+        # self.textDENSITY.textEdited.connect(self.TopMatDens) #sends text signal to TopMatDens
+        r5c2Layout.addWidget(self.textDENSITY)
         r5Layout.addLayout(r5c2Layout)
 
         widget = QLabel("thickness")
         r5c3Layout.addWidget(widget)
-        TopMatThickLine = QLineEdit()
-        TopMatThickLine.setMaxLength(10)
-        # TopMatThickLine.textEdited.connect(self.TopMatThick) #sends text signal to TopMatThick
-        r5c3Layout.addWidget(TopMatThickLine)
+        self.textTOP = QLineEdit("0.001")
+        self.textTOP.setMaxLength(50)
+        # self.textTOP.textEdited.connect(self.TopMatThick) #sends text signal to TopMatThick
+        r5c3Layout.addWidget(self.textTOP)
         r5Layout.addLayout(r5c3Layout)
 
         mLayout.addLayout(r5Layout)
@@ -165,26 +166,26 @@ class MainWindow(QMainWindow):
 
         widget = QLabel("Bottom Substrate Material")
         r6c1Layout.addWidget(widget)
-        BotMatLine = QLineEdit()
-        BotMatLine.setMaxLength(10)
-        # BotMatLine.textEdited.connect(self.BotMat) #sends text signal to BotMat
-        r6c1Layout.addWidget(BotMatLine)
+        self.textSUBSTRATE2 = QLineEdit("Al2O3")
+        self.textSUBSTRATE2.setMaxLength(20)
+        # self.textSUBSTRATE2.textEdited.connect(self.BotMat) #sends text signal to BotMat
+        r6c1Layout.addWidget(self.textSUBSTRATE2)
         r6Layout.addLayout(r6c1Layout)
 
         widget = QLabel("density")
         r6c2Layout.addWidget(widget)
-        BotMatDensLine = QLineEdit()
-        BotMatDensLine.setMaxLength(10)
-        # BotMatDensLine.textEdited.connect(self.BotMatDens) #sends text signal to BotMatDens
-        r6c2Layout.addWidget(BotMatDensLine)
+        self.textDENSITY2 = QLineEdit("3.97")
+        self.textDENSITY2.setMaxLength(10)
+        # self.textDENSITY2.textEdited.connect(self.BotMatDens) #sends text signal to BotMatDens
+        r6c2Layout.addWidget(self.textDENSITY2)
         r6Layout.addLayout(r6c2Layout)
 
         widget = QLabel("thickness")
         r6c3Layout.addWidget(widget)
-        BotMatThickLine = QLineEdit()
-        BotMatThickLine.setMaxLength(10)
-        # BotMatThickLine.textEdited.connect(self.BotMatThick) #sends text signal to BotMatThick
-        r6c3Layout.addWidget(BotMatThickLine)
+        self.textBOT = QLineEdit("0.001")
+        self.textBOT.setMaxLength(10)
+        # self.textBOT.textEdited.connect(self.BotMatThick) #sends text signal to BotMatThick
+        r6c3Layout.addWidget(self.textBOT)
         r6Layout.addLayout(r6c3Layout)
 
         mLayout.addLayout(r6Layout)
@@ -194,10 +195,10 @@ class MainWindow(QMainWindow):
         
         widget = QLabel("Location of Fluorescence")
         r7Layout.addWidget(widget)
-        LocFcombBox = QComboBox()
-        LocFcombBox.addItems(["a", "b"])
-        # LocFcombBox.currentTextChanged.connect(self.LocF) #sends text signal to LocF
-        r7Layout.addWidget(LocFcombBox)
+        self.cbLOCATION = QComboBox()
+        self.cbLOCATION.addItems(["all"])
+        # self.cbLOCATION.currentTextChanged.connect(self.LocF) #sends text signal to LocF
+        r7Layout.addWidget(self.cbLOCATION)
 
         mLayout.addLayout(r7Layout)
 
@@ -206,10 +207,10 @@ class MainWindow(QMainWindow):
         
         widget = QLabel("He Path Used?")
         r8Layout.addWidget(widget)
-        HePcombBox = QComboBox()
-        HePcombBox.addItems(["a", "b"])
-        # HePcombBox.currentTextChanged.connect(self.HeP) #sends text signal to HeP
-        r8Layout.addWidget(HePcombBox)
+        self.cbHE = QComboBox()
+        self.cbHE.addItems(["no", "yes"])
+        # self.cbHE.currentTextChanged.connect(self.HeP) #sends text signal to HeP
+        r8Layout.addWidget(self.cbHE)
 
         mLayout.addLayout(r8Layout)
 
@@ -220,18 +221,18 @@ class MainWindow(QMainWindow):
 
         widget = QLabel("Al")
         r9c1Layout.addWidget(widget)
-        AlLine = QLineEdit()
-        AlLine.setMaxLength(10)
-        # AlLine.textEdited.connect(self.Al) #sends signal to Al
-        r9c1Layout.addWidget(AlLine)
+        self.textAL = QLineEdit("0")
+        self.textAL.setMaxLength(10)
+        # self.textAL.textEdited.connect(self.Al) #sends signal to Al
+        r9c1Layout.addWidget(self.textAL)
         r9Layout.addLayout(r9c1Layout)
 
-        widget = QLabel("Kr")
+        widget = QLabel("Kapton")
         r9c2Layout.addWidget(widget)
-        KrLine = QLineEdit()
-        KrLine.setMaxLength(10)
-        # KrLine.textEdited.connect(self.Kr) #sends signal to Kr
-        r9c2Layout.addWidget(KrLine)
+        self.textKAPTON = QLineEdit("0")
+        self.textKAPTON.setMaxLength(10)
+        # self.textKAPTON.textEdited.connect(self.Kr) #sends signal to Kr
+        r9c2Layout.addWidget(self.textKAPTON)
         r9Layout.addLayout(r9c2Layout)
 
         mLayout.addLayout(r9Layout)
@@ -243,28 +244,28 @@ class MainWindow(QMainWindow):
 
         widget = QLabel("Vortex")
         r10c1Layout.addWidget(widget)
-        VortexLine = QLineEdit()
-        VortexLine.setMaxLength(10)
-        # VortexLine.textEdited.connect(self.Vortex) #sends signal to Vortex
-        r10c1Layout.addWidget(VortexLine)
+        self.textWD = QLineEdit("6.0")
+        self.textWD.setMaxLength(10)
+        # self.textWD.textEdited.connect(self.Vortex) #sends signal to Vortex
+        r10c1Layout.addWidget(self.textWD)
         r10Layout.addLayout(r10c1Layout)
 
         widget = QLabel("Detector")
         r10c2Layout.addWidget(widget)
-        DetcombBox = QComboBox()
-        DetcombBox.addItems(["a", "b"])
-        # DetcombBox.currentTextChanged.connect(self.Detector) #sends text signal to Det
-        r10c2Layout.addWidget(DetcombBox)
+        self.cbXSW = QComboBox()
+        self.cbXSW.addItems(["WD60mm(XRM)"])
+        # self.cbXSW.currentTextChanged.connect(self.Detector) #sends text signal to Det
+        r10c2Layout.addWidget(self.cbXSW)
         r10Layout.addLayout(r10c2Layout)
 
         mLayout.addLayout(r10Layout)
 
-        #row 11
-        # r11Layout = QHBoxLayout()
+        # row 11
+        r11Layout = QHBoxLayout()
 
-        # self.widget11 = QLabel("Output is here")
-        # r11Layout.addWidget(self.widget11)
-        # mLayout.addLayout(r11Layout)
+        self.TextOutput = QComboBox()
+        r11Layout.addWidget(self.TextOutput)
+        mLayout.addLayout(r11Layout)
 
         #graph tab (output tab for now)
         m2Layout = QVBoxLayout()
@@ -292,11 +293,24 @@ class MainWindow(QMainWindow):
 
 
 
+        #TABLE SET UP
+        self.table = QTableView()
+        self.table.setFont(QtGui.QFont('Arial', 18))
+        self.table.resizeColumnsToContents()
+
+
+        self.readTableData()
+
+        
+
         btn = QPushButton("Settings")
         btn.pressed.connect(self.activate_tab_1)
         button_layout.addWidget(btn)
         self.stacklayout.addWidget(fWidget)
         
+
+
+
 
         self.graphwidget = QLabel("Hello")
         # graphwidget.setPixmap(QPixmap('plottt.jpg'))
@@ -333,21 +347,23 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(btn)
         self.stacklayout.addWidget(self.plot_graph)
 
-        tablewidget = QLabel("Hello")
-        tableimage = QPixmap('table.jpg')
-        tablewidget.setPixmap(tableimage)
-        tablewidget.setScaledContents(True)
+        # tablewidget = QLabel("Hello")
+        # tableimage = QPixmap('table.jpg')
+        # tablewidget.setPixmap(tableimage)
+        # tablewidget.setScaledContents(True)
 
 
 
         btn = QPushButton("Table")
         btn.pressed.connect(self.activate_tab_3)
         button_layout.addWidget(btn)
-        self.stacklayout.addWidget(tablewidget)
+        self.stacklayout.addWidget(self.table)
 
         widget = QWidget()
         widget.setLayout(pagelayout)
         self.setCentralWidget(widget)
+
+   # ------------------functions----------------------        
 
     def activate_tab_1(self):
         self.stacklayout.setCurrentIndex(0)
@@ -361,30 +377,34 @@ class MainWindow(QMainWindow):
 
 
 
-    # - - - - - functions - - - - -
+
+ 
 
     def simulate(self):
+        self.num100 = int(self.textENERGY.text())
+        self.num200 = int(self.textANGLE.text())
         numSum = self.num100 + self.num200
         strSum = str(numSum)
+        print(strSum)
         self.graphwidget.setText(strSum)
     #     calcList = []
-    #     calcList.append(self.ELine.text())
-    #     calcList.append(self.ALine.text())
+    #     calcList.append(self.textENERGY.text())
+    #     calcList.append(self.textANGLE.text())
     #     aa = calc.lcm(calcList)
     #     self.simPlcombBox.setItemText(2, f"{aa}")
 
     def plotxx(self):
         self.graphwidget.setText("2")
 
-    #Line edit for row 2a (ELine)
+    #Line edit for row 2a (textENERGY)
     def onPressed(self):
-        self.num100 = int(self.ELine.text())
+        self.num100 = int(self.textENERGY.text())
         str100 = str(self.num100)
         self.graphwidget.setText(str100)
 
-    #Line edit for row 2b (ALine)
+    #Line edit for row 2b (textANGLE)
     def onPressed2(self):
-        self.num200 = int(self.ALine.text())
+        self.num200 = int(self.textANGLE.text())
         str200 = str(self.num200)
         self.graphwidget.setText(str200)
 
@@ -394,6 +414,182 @@ class MainWindow(QMainWindow):
             self.label.setHtml(
                 "<p style='color:white'>Abscissa： {0} <br> Ordinate: {1}</p>".\
                 format(point.x(), point.y()))
+            
+
+    def OnSimulate(self, event):
+                #----------  Retrive values from panel --------------
+                AtomList=[]; ConcList=[]; Atoms=[]
+                text=self.textENERGY.text()
+                eV0=float(text)                 # incident energy
+                text=self.textANGLE.text()
+                angle0=float(text)              # incident angle
+                if eV0<=1000:   eV0=1010
+                text=self.textELEMENT.text()        # list of elements and concentrations
+                words=text.split()
+                junk=["'", ",", ":", ";", "/", "\\"]
+                for (ix,word) in enumerate(words):
+                        concentration=1.0;      skip=0
+                        for test in junk:
+                                if word==test: skip=1
+                                if word.startswith(test): word=word[1:]
+                                if word.endswith(test): word=word[:-1]                               
+                        if skip==1: continue
+                        if (word.isalpha()):            # element name
+                                word=word[0].upper()+word[1:]
+                                AtomList.append(str(word))
+                        else:                           # concentration
+                                concentration=float(word)
+                                ConcList.append(concentration)
+                # appending to Atoms is done later.
+                #
+                text=self.textSUBSTRATE.text()
+                substrate1=str(text)                    # substrate1 material
+                text=self.textDENSITY.text()
+                density1=float(text)                    # substrate1 density in g/cc
+                text=self.textTOP.text()
+                thickness1=float(text)                  # substrate1 thickness in cm
+                #
+                text=self.textSUBSTRATE2.text()
+                substrate2=str(text)                    # substrate2 material
+                text=self.textDENSITY2.text()
+                density2=float(text)                    # substrate2 density
+                text=self.textBOT.text()
+                thickness2=float(text)                  # substrate2 thickness
+                text=self.cbLOCATION.currentText()
+                loc=text                                # location of elements 
+                #
+                unit_PPM=self.cbPPM.currentText()          # unit for concentration atomic fraction or  weight fraction
+                # 
+                if unit_PPM=='weight fraction':                   # concentrations are in weight fraction
+                        substrate1_material = fluo_det.Material(substrate1, density1)
+                        AtomicWeight_substrate1 = substrate1_material.AtWt      # g/mol of substrate1
+                        for (ii, item) in enumerate(AtomList):
+                                AtomicSymbol = item                               # dilute elements
+                                AtomicWeight = fluo_elem.AtSym2AtWt(AtomicSymbol)      # g/mol
+                                concentration_AtWtFract = ConcList[ii]            # concentration in weight fraction
+                                Conversion = AtomicWeight_substrate1/AtomicWeight # weight fraction to atomic fraction
+                                ConcList[ii] = Conversion * concentration_AtWtFract
+                                #print AtomicSymbol, concentration_AtWtFract, Conversion, Conversion * concentration_AtWtFract
+                # concentrations are in atomic percent now
+                # 
+                for (ii, item) in enumerate(AtomList):
+                        AtSym=item                      # name of element
+                        con=ConcList[ii]/1.0e6          # concentration, from ppm(1e-6) to fraction 
+                        atom1=fluo_det.ElemFY(AtSym, con)   # atom1.AtomicSybol, atom1.Concentration
+                        Atoms.append(atom1)             # Atoms is a list of objects with attributes
+                #
+                text=self.cbHE.currentText()
+                if text=='Yes':
+                        xHe=1
+                else:
+                        xHe=0
+                text=self.textAL.text()
+                xAl=float(text)
+                text=self.textKAPTON.text()
+                xKap=float(text)
+                text=self.textWD.text()
+                WD=float(text)
+                text=self.cbXSW.currentText()              # collimator
+                if text=='WD60mm(XRM)': xsw=0
+                if text=='WD30mm(XSW)': xsw=1
+                if text=='none':        xsw=-1
+                # --------------  run functions in fluo.py -----------------------------
+                #reload(fluo_det)   June2024, incompatible with python3
+                self.input=fluo_det.input_param(eV0, Atoms, xHe, xAl, xKap, WD, xsw)
+                matrix=fluo_det.SampleMatrix2(substrate1, density1, thickness1,substrate2, density2, thickness2, angle0, loc)
+                #print '####', substrate1, density1, thickness1,substrate2, density2, thickness2
+                # --- change directory for pc executable: py2exe makes exe-file in dist folder.  put outputfiles one folder up.
+                exeExists=0
+                if os.path.exists('fluo_panel.exe'):    # run from exe file put outputs in different folder
+                        exeExists=1
+                path0=os.getcwd()
+                if self.path==path0 and exeExists==1:   # current directory is the original location
+                        num=len(path0)
+                        range0=range(num-1, -1, -1)
+                        for ix in range0:
+                                if path0[ix]=='\\' :    # find position for right-most '\'
+                                        pos0=ix
+                                        break
+                        path0=path0[:pos0]              
+                        os.chdir(path0)                 # go up one level in directory
+                # ------------------------------------------------------------------------
+                textOut=fluo_det.sim_spectra(eV0, Atoms, xHe, xAl, xKap, WD, xsw, sample=matrix)
+                printout='output: simSpectrum_table.txt, simSpectrum_plot.txt, Elemental_Sensitivity.txt'
+                printout+=' saved in '+path0
+                print (printout)
+                #self.cbLINES.Destroy()
+                #self.fyList=[]
+                #self.cbLINES = wx.ComboBox(self, 3, 'Press [Plot!] to update', (120, 30), (165, 10), self.fyList, wx.CB_DROPDOWN)
+                self.cbLINES.clear()  # use these three lines instead of above 3, 8/27/2010
+                self.cbLINES.setCurrentText(str('Press [Plot!] to update'))
+                self.cbLINES.addItems(self.fyList)
+                # -------------  display output message from fluo.sim_spectra -------------
+                textList=textOut.split()
+                self.TextOutputList=[]
+                #self.TextOutput.Destroy()  # 8/27/2010
+                for ii in range(0, len(textList), 2):
+                        temp=textList[ii]+' '+textList[ii+1]
+                        self.TextOutputList.append(temp)
+                #self.TextOutput = wx.ComboBox(self, 26, 'concentration list', (10, 410), (280, 20), self.TextOutputList, wx.CB_DROPDOWN)
+                self.TextOutput.clear()
+                self.TextOutput.addItems(self.TextOutputList)
+                # displays number densities and absorption lengths 
+
+                self.readTableData()
+             
+
+
+    def readTableData(self):
+          #--------  read simSpectrum_table.txt and fill cb0  ----------------             
+        data2=[]
+        self.fyList=[]                  # Empty ComboBox textfield and refill below 
+        inputfile='simSpectrum_table.txt'
+        f=open(inputfile)
+        lines=f.readlines()
+        for line in lines:
+            if line.startswith('#'):    continue
+            words=line.split()
+            name=words[0]
+            energy = int(round(float(words[1])))        # round up to int
+            inten=words[2]; inten=float(inten)*10000; inten = str(inten); inten=inten[:7]
+            data2.append([name, energy, float(inten)])   # data2 for secondary plot
+            
+        f.close()
+        data = pd.DataFrame(data2, columns = ['Emission', 'Energy (ev)', 'Intensity'])
+
+        self.model = TableModel(data)
+        self.table.setModel(self.model)
+                              
+
+
+
+class TableModel(QtCore.QAbstractTableModel):
+
+    def __init__(self, data):
+        super(TableModel, self).__init__()
+        self._data = data
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            value = self._data.iloc[index.row(), index.column()]
+            return str(value)
+        #return Qt.AlignCenter
+
+    def rowCount(self, index):
+        return self._data.shape[0]
+
+    def columnCount(self, index):
+        return self._data.shape[1]
+
+    def headerData(self, section, orientation, role):
+        # section is the index of the column/row.
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return str(self._data.columns[section])
+
+            if orientation == Qt.Vertical:
+                return str(self._data.index[section])
+            
 
 
 
@@ -403,3 +599,26 @@ window = MainWindow()
 window.show()
 
 app.exec()
+
+
+
+
+
+
+
+
+
+#NEW CODE
+    # def plot(self):
+    #     infile = 'simSpectrum_plot.txt'
+    #     xx, yy = np.loadtxt (infile, unpack=True)  # "import numpy as np" added at the beginning of the file.
+    #     # now xx, yy are arrays with x and y values.
+    #     pen = pg.mkPen(color=(255, 0, 0), width=5)#, style=QtCore.Qt.DashLine)
+    #     self.plot_graph.clear()
+    #     self.plot_graph.plotItem.setLogMode(False, True)
+    #     self.plot_graph.plot(xx, yy, pen=pen)
+    #     self.plot_graph.plotItem.setLogMode(False, True)
+
+    #self.plot_graph.plotItem.setLogMode(False, True)
+ 
+ 
