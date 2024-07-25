@@ -1,15 +1,10 @@
 import sys
-import calc
 import pyqtgraph as pg
-# import fluo_elem, fluo_det, readf1f2a
-import os.path
-import os
-import time
+import fluo_elem, fluo_det, readf1f2a
 import numpy as np
 from PyQt5 import QtCore
 # from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDateEdit, QDateTimeEdit, QDial, QDoubleSpinBox, QFontComboBox,
-    QLabel, QLCDNumber, QLineEdit, QMainWindow, QProgressBar, QPushButton, QRadioButton, QSlider, QSpinBox, QTimeEdit, QVBoxLayout, 
+from PyQt5.QtWidgets import (QApplication, QComboBox, QLabel, QLineEdit, QMainWindow, QPushButton, QVBoxLayout, 
     QHBoxLayout, QWidget, QTableWidget,QTableWidgetItem
 )
 
@@ -53,7 +48,9 @@ class MainWindow(QMainWindow):
         self.plot_graph.setBackground("w")
 
     def changePara(self, checked):
-        if not self.w.isVisible():
+        if self.w.isVisible():
+            self.w.hide()
+        elif not self.w.isVisible():
             self.w.show()
     
     def plot(self):
@@ -62,6 +59,7 @@ class MainWindow(QMainWindow):
         # now xx, yy are arrays with x and y values. 
         pen = pg.mkPen(color=(255, 0, 0), width=5)#, style=QtCore.Qt.DashLine) 
         self.plot_graph.clear()
+        self.plot_graph.plotItem.setLogMode(False, True)
         self.plot_graph.plot(xx, yy, pen=pen)
         
     
@@ -112,10 +110,6 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         Pbutton.clicked.connect(self.plot) #sends signal to plot
         r1c1Layout.addWidget(Pbutton)
         r1Layout.addLayout(r1c1Layout)
-        self.simPlcombBox = QComboBox()
-        self.simPlcombBox.addItems(["b", "c", ""])
-        # combBox.currentTextChanged.connect(self.simPlot) #sends text signal to simPlot
-        r1Layout.addWidget(self.simPlcombBox)
         mLayout.addLayout(r1Layout)
         
         #row 2
@@ -241,10 +235,10 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         
         widget = QLabel("Location of fluorescence elements")
         r7Layout.addWidget(widget)
-        LocFcombBox = QComboBox()
-        LocFcombBox.addItems(["All"])
+        self.LocFcombBox = QComboBox()
+        self.LocFcombBox.addItems(["All"])
         # LocFcombBox.currentTextChanged.connect(self.LocF) #sends text signal to LocF
-        r7Layout.addWidget(LocFcombBox)
+        r7Layout.addWidget(self.LocFcombBox)
 
         mLayout.addLayout(r7Layout)
 
@@ -253,10 +247,10 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         
         widget = QLabel("He Path Used?")
         r8Layout.addWidget(widget)
-        HePcombBox = QComboBox()
-        HePcombBox.addItems(["No", "Yes"])
+        self.HePcombBox = QComboBox()
+        self.HePcombBox.addItems(["No", "Yes"])
         # HePcombBox.currentTextChanged.connect(self.HeP) #sends text signal to HeP
-        r8Layout.addWidget(HePcombBox)
+        r8Layout.addWidget(self.HePcombBox)
 
         mLayout.addLayout(r8Layout)
 
@@ -267,20 +261,20 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
 
         widget = QLabel("# of Al film (1.5 mil)")
         r9c1Layout.addWidget(widget)
-        AlLine = QLineEdit()
-        AlLine.setMaxLength(10)
-        AlLine.setText("0")
+        self.AlLine = QLineEdit()
+        self.AlLine.setMaxLength(10)
+        self.AlLine.setText("0")
         # AlLine.textEdited.connect(self.Al) #sends signal to Al
-        r9c1Layout.addWidget(AlLine)
+        r9c1Layout.addWidget(self.AlLine)
         r9Layout.addLayout(r9c1Layout)
 
         widget = QLabel("# of Kapton film (0.3 mil)")
         r9c2Layout.addWidget(widget)
-        KrLine = QLineEdit()
-        KrLine.setMaxLength(10)
-        KrLine.setText("0")
+        self.KrLine = QLineEdit()
+        self.KrLine.setMaxLength(10)
+        self.KrLine.setText("0")
         # KrLine.textEdited.connect(self.Kr) #sends signal to Kr
-        r9c2Layout.addWidget(KrLine)
+        r9c2Layout.addWidget(self.KrLine)
         r9Layout.addLayout(r9c2Layout)
 
         mLayout.addLayout(r9Layout)
@@ -292,19 +286,19 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
 
         widget = QLabel("Vortex detector distance (cm)")
         r10c1Layout.addWidget(widget)
-        VortexLine = QLineEdit()
-        VortexLine.setMaxLength(10)
-        VortexLine.setText("6.0")
+        self.VortexLine = QLineEdit()
+        self.VortexLine.setMaxLength(10)
+        self.VortexLine.setText("6.0")
         # VortexLine.textEdited.connect(self.Vortex) #sends signal to Vortex
-        r10c1Layout.addWidget(VortexLine)
+        r10c1Layout.addWidget(self.VortexLine)
         r10Layout.addLayout(r10c1Layout)
 
         widget = QLabel("Detector collimator")
         r10c2Layout.addWidget(widget)
-        DetcombBox = QComboBox()
-        DetcombBox.addItems(["WD60mm (XRM)"])
+        self.DetcombBox = QComboBox()
+        self.DetcombBox.addItems(["WD60mm (XRM)"])
         # DetcombBox.currentTextChanged.connect(self.Detector) #sends text signal to Det
-        r10c2Layout.addWidget(DetcombBox)
+        r10c2Layout.addWidget(self.DetcombBox)
         r10Layout.addLayout(r10c2Layout)
 
         mLayout.addLayout(r10Layout)
@@ -317,12 +311,12 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         calcList = []
         calcList.append(self.ELine.text())
         calcList.append(self.ALine.text())
-        global aa
-        aa = calc.lcm(calcList)
-        #sub in aa for all the other global variables
+
+        #self.input=fluo_det.input_param(eV0, Atoms, xHe, xAl, xKap, WD, xsw)
+        #matrix=fluo_det.SampleMatrix2(substrate1, density1, thickness1, substrate2, density2, thickness2, angle0, loc)
+        #textOut=fluo_det.sim_spectra(eV0, Atoms, xHe, xAl, xKap, WD, xsw, sample=matrix)
 
     def plot(self):
-        global temperature
         window.plot()
 
 
