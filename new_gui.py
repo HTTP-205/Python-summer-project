@@ -7,7 +7,7 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QApplication, QComboBox, QLabel, QLineEdit, QMainWindow, QPushButton, QVBoxLayout, 
     QHBoxLayout, QWidget, QTableWidget,QTableWidgetItem
 )
-
+toggle = False
 
 #calc.lcm():
 class MainWindow(QMainWindow):
@@ -79,14 +79,16 @@ class MainWindow(QMainWindow):
         self.tableWidget.setItem(0,1, QTableWidgetItem("Energy (eV)"))
         self.tableWidget.setItem(0,2, QTableWidgetItem("Intensity"))
         infile = 'simSpectrum_table.txt'
-        Emission, Energy, Intensity = np.loadtxt (infile, dtype='str', unpack=True)
-        i = 1
-        while i < len(Emission):
-            j = i-1
-            self.tableWidget.setItem(i,0, QTableWidgetItem(Emission[j]))
-            self.tableWidget.setItem(i,1, QTableWidgetItem(Energy[j]))
-            self.tableWidget.setItem(i,2, QTableWidgetItem(Intensity[j]))
-            i+=1
+        global toggle
+        if toggle == True:
+            Emission, Energy, Intensity = np.loadtxt (infile, dtype='str', unpack=True)
+            i = 1
+            while i < len(Emission):
+                j = i-1
+                self.tableWidget.setItem(i,0, QTableWidgetItem(Emission[j]))
+                self.tableWidget.setItem(i,1, QTableWidgetItem(Energy[j]))
+                self.tableWidget.setItem(i,2, QTableWidgetItem(Intensity[j]))
+                i+=1
 
 
 
@@ -153,7 +155,7 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         widget = QLabel("Elements and concentrations (ppm of top substrate material)")
         r4Layout.addWidget(widget)
         self.ElConcLine = QLineEdit()
-        self.ElConcLine.setMaxLength(10)
+        self.ElConcLine.setMaxLength(40)
         self.ElConcLine.setText("La 10 Ce 10 Nd 10")
         # ElConcLine.textEdited.connect(self.ElConc) #sends text signal to energy 
         r4Layout.addWidget(self.ElConcLine)
@@ -236,7 +238,7 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         widget = QLabel("Location of fluorescence elements")
         r7Layout.addWidget(widget)
         self.LocFcombBox = QComboBox()
-        self.LocFcombBox.addItems(["All"])
+        self.LocFcombBox.addItems(["all"])
         # LocFcombBox.currentTextChanged.connect(self.LocF) #sends text signal to LocF
         r7Layout.addWidget(self.LocFcombBox)
 
@@ -248,7 +250,7 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         widget = QLabel("He Path Used?")
         r8Layout.addWidget(widget)
         self.HePcombBox = QComboBox()
-        self.HePcombBox.addItems(["No", "Yes"])
+        self.HePcombBox.addItems(["no", "yes"])
         # HePcombBox.currentTextChanged.connect(self.HeP) #sends text signal to HeP
         r8Layout.addWidget(self.HePcombBox)
 
@@ -270,11 +272,11 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
 
         widget = QLabel("# of Kapton film (0.3 mil)")
         r9c2Layout.addWidget(widget)
-        self.KrLine = QLineEdit()
-        self.KrLine.setMaxLength(10)
-        self.KrLine.setText("0")
+        self.KapLine = QLineEdit()
+        self.KapLine.setMaxLength(10)
+        self.KapLine.setText("0")
         # KrLine.textEdited.connect(self.Kr) #sends signal to Kr
-        r9c2Layout.addWidget(self.KrLine)
+        r9c2Layout.addWidget(self.KapLine)
         r9Layout.addLayout(r9c2Layout)
 
         mLayout.addLayout(r9Layout)
@@ -296,7 +298,7 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         widget = QLabel("Detector collimator")
         r10c2Layout.addWidget(widget)
         self.DetcombBox = QComboBox()
-        self.DetcombBox.addItems(["WD60mm (XRM)"])
+        self.DetcombBox.addItems(["WD60mm(XRM)"])
         # DetcombBox.currentTextChanged.connect(self.Detector) #sends text signal to Det
         r10c2Layout.addWidget(self.DetcombBox)
         r10Layout.addLayout(r10c2Layout)
@@ -308,13 +310,87 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
     # - - - - - functions - - - - -
 
     def simulate(self):
-        calcList = []
-        calcList.append(self.ELine.text())
-        calcList.append(self.ALine.text())
-
-        #self.input=fluo_det.input_param(eV0, Atoms, xHe, xAl, xKap, WD, xsw)
-        #matrix=fluo_det.SampleMatrix2(substrate1, density1, thickness1, substrate2, density2, thickness2, angle0, loc)
-        #textOut=fluo_det.sim_spectra(eV0, Atoms, xHe, xAl, xKap, WD, xsw, sample=matrix)
+        AtomList=[]; ConcList=[]; Atoms=[]
+        text=self.ELine.text()
+        eV0=float(text)                 # incident energy
+        text=self.ALine.text()
+        angle0=float(text)              # incident angle
+        if eV0<=1000:   eV0=1010
+        text=self.ElConcLine.text()        # list of elements and concentrations
+        words=text.split()
+        junk=["'", ",", ":", ";", "/", "\\"]
+        for (ix,word) in enumerate(words):
+                concentration=1.0;      skip=0
+                for test in junk:
+                        if word==test: skip=1
+                        if word.startswith(test): word=word[1:]
+                        if word.endswith(test): word=word[:-1]                               
+                if skip==1: continue
+                if (word.isalpha()):            # element name
+                        word=word[0].upper()+word[1:]
+                        AtomList.append(str(word))
+                else:                           # concentration
+                        concentration=float(word)
+                        ConcList.append(concentration)
+        # appending to Atoms is done later.
+        #
+        text=self.TopMatLine.text()
+        substrate1=str(text)                    # substrate1 material
+        text=self.TopMatDensLine.text()
+        density1=float(text)                    # substrate1 density in g/cc
+        text=self.TopMatThickLine.text()
+        thickness1=float(text)                  # substrate1 thickness in cm
+        #
+        text=self.BotMatLine.text()
+        substrate2=str(text)                    # substrate2 material
+        text=self.BotMatDensLine.text()
+        density2=float(text)                    # substrate2 density
+        text=self.BotMatThickLine.text()
+        thickness2=float(text)                  # substrate2 thickness
+        text=self.LocFcombBox.currentText()
+        loc=text                                # location of elements 
+        #
+        unit_PPM=self.AorWcombBox.currentText()          # unit for concentration atomic fraction or  weight fraction
+        # 
+        if unit_PPM=='weight fraction':                   # concentrations are in weight fraction
+                substrate1_material = fluo_det.Material(substrate1, density1)
+                AtomicWeight_substrate1 = substrate1_material.AtWt      # g/mol of substrate1
+                for (ii, item) in enumerate(AtomList):
+                        AtomicSymbol = item                               # dilute elements
+                        AtomicWeight = fluo_elem.AtSym2AtWt(AtomicSymbol)      # g/mol
+                        concentration_AtWtFract = ConcList[ii]            # concentration in weight fraction
+                        Conversion = AtomicWeight_substrate1/AtomicWeight # weight fraction to atomic fraction
+                        ConcList[ii] = Conversion * concentration_AtWtFract
+                        #print AtomicSymbol, concentration_AtWtFract, Conversion, Conversion * concentration_AtWtFract
+        # concentrations are in atomic percent now
+        # 
+        for (ii, item) in enumerate(AtomList):
+                AtSym=item                      # name of element
+                con=ConcList[ii]/1.0e6          # concentration, from ppm(1e-6) to fraction 
+                atom1=fluo_det.ElemFY(AtSym, con)   # atom1.AtomicSybol, atom1.Concentration
+                Atoms.append(atom1)             # Atoms is a list of objects with attributes
+        #
+        text=self.HePcombBox.currentText()
+        if text=='Yes':
+                xHe=1
+        else:
+                xHe=0
+        text=self.AlLine.text()
+        xAl=float(text)
+        text=self.KapLine.text()
+        xKap=float(text)
+        text=self.VortexLine.text()
+        WD=float(text)
+        text=self.DetcombBox.currentText()              # collimator
+        if text=='WD60mm(XRM)': xsw=0
+        if text=='WD30mm(XSW)': xsw=1
+        if text=='none':        xsw=-1
+        self.input=fluo_det.input_param(eV0, Atoms, xHe, xAl, xKap, WD, xsw)
+        matrix=fluo_det.SampleMatrix2(substrate1, density1, thickness1, substrate2, density2, thickness2, angle0, loc)
+        textOut=fluo_det.sim_spectra(eV0, Atoms, xHe, xAl, xKap, WD, xsw, sample=matrix)
+        
+        global toggle
+        toggle = True
 
     def plot(self):
         window.plot()
