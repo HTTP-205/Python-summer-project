@@ -5,6 +5,7 @@ import pyqtgraph as pg
 import os
 import os.path
 import time
+import numpy as np
 from pyqtgraph import PlotWidget, plot
 import fluo_elem, fluo_det, readf1f2a
 from PyQt5 import QtCore, QtGui
@@ -196,7 +197,7 @@ class MainWindow(QMainWindow):
         widget = QLabel("Location of Fluorescence")
         r7Layout.addWidget(widget)
         self.cbLOCATION = QComboBox()
-        self.cbLOCATION.addItems(["all"])
+        self.cbLOCATION.addItems(['all', 'top', 'bottom', 'surface'])
         # self.cbLOCATION.currentTextChanged.connect(self.LocF) #sends text signal to LocF
         r7Layout.addWidget(self.cbLOCATION)
 
@@ -253,7 +254,7 @@ class MainWindow(QMainWindow):
         widget = QLabel("Detector")
         r10c2Layout.addWidget(widget)
         self.cbXSW = QComboBox()
-        self.cbXSW.addItems(["WD60mm(XRM)"])
+        self.cbXSW.addItems(['WD60mm(XRM)', 'WD30mm(XSW)', 'none'])
         # self.cbXSW.currentTextChanged.connect(self.Detector) #sends text signal to Det
         r10c2Layout.addWidget(self.cbXSW)
         r10Layout.addLayout(r10c2Layout)
@@ -323,16 +324,16 @@ class MainWindow(QMainWindow):
         self.plot_graph.plot(time, temperature)
 
         #title
-        self.plot_graph.setTitle("Temperature vs Time", color="b", size="20pt")
+        self.plot_graph.setTitle("", color="b", size="0pt")
 
         #label axises
-        self.plot_graph.setLabel("left", "Temperature (°C)")
-        self.plot_graph.setLabel("bottom", "Time (min)")
+        self.plot_graph.setLabel("left", "Intensity (total count = 100k)", color="white")
+        self.plot_graph.setLabel("bottom", "Energy (eV)", color="white")
 
         #cursor_tracking
         # +++ vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-        self.label = pg.TextItem(text="Abscissa: {} \nOrdinate: {}".format(0, 0))
-        self.plot_graph.addItem(self.label)
+        # self.label = pg.TextItem(text="Energy: {} \nIntensity: {}".format(0, 0))
+        # self.plot_graph.addItem(self.label)
         
         self.setMouseTracking(True)
         self.plot_graph.scene().sigMouseMoved.connect(self.onMouseMoved)
@@ -346,6 +347,10 @@ class MainWindow(QMainWindow):
         btn.pressed.connect(self.activate_tab_2)
         button_layout.addWidget(btn)
         self.stacklayout.addWidget(self.plot_graph)
+
+        
+
+
 
         # tablewidget = QLabel("Hello")
         # tableimage = QPixmap('table.jpg')
@@ -370,6 +375,18 @@ class MainWindow(QMainWindow):
 
     def activate_tab_2(self):
         self.stacklayout.setCurrentIndex(1)
+        self.readplotdata()
+        self.plot_graph.plot(self.xx, self.yy)
+        
+        self.label = pg.TextItem(text="Energy: {} \nIntensity: {}".format(0, 0))
+        self.plot_graph.addItem(self.label)
+        
+        self.setMouseTracking(True)
+        self.plot_graph.scene().sigMouseMoved.connect(self.onMouseMoved)
+
+        for e1 in self.energyList:
+            vLine = pg.InfiniteLine(pos=e1, angle=90, movable=False, pen=pg.mkPen('pink', width=.75, style=QtCore.Qt.SolidLine))
+            self.plot_graph.addItem(vLine)
 
     def activate_tab_3(self):
         self.stacklayout.setCurrentIndex(2)
@@ -412,8 +429,18 @@ class MainWindow(QMainWindow):
         if self.plot_graph.plotItem.vb.mapSceneToView(evt):
             point =self.plot_graph.plotItem.vb.mapSceneToView(evt)
             self.label.setHtml(
-                "<p style='color:white'>Abscissa： {0} <br> Ordinate: {1}</p>".\
+                "<p style='color:white'>Energy： {0} <br> Intensity: {1}</p>".\
                 format(point.x(), point.y()))
+            
+    def readplotdata(self):
+        infile = 'simSpectrum_plot.txt'
+        self.xx, self.yy = np.loadtxt (infile, unpack=True)  # "import numpy as np" added at the beginning of the file.
+        # now xx, yy are arrays with x and y values.
+        pen = pg.mkPen(color=(255, 0, 0), width=5)#, style=QtCore.Qt.DashLine)
+        self.plot_graph.clear()
+        self.plot_graph.plotItem.setLogMode(False, True)
+        self.plot_graph.plot(self.xx, self.yy, pen=pen)
+        self.plot_graph.plotItem.setLogMode(False, True)
             
 
     def OnSimulate(self, event):
@@ -559,6 +586,14 @@ class MainWindow(QMainWindow):
 
         self.model = TableModel(data)
         self.table.setModel(self.model)
+
+        self.energyList = []
+        for x in range(0, len(data2)):
+            self.energyList.append(data2[x][1])
+        
+
+
+
                               
 
 
@@ -609,15 +644,7 @@ app.exec()
 
 
 #NEW CODE
-    # def plot(self):
-    #     infile = 'simSpectrum_plot.txt'
-    #     xx, yy = np.loadtxt (infile, unpack=True)  # "import numpy as np" added at the beginning of the file.
-    #     # now xx, yy are arrays with x and y values.
-    #     pen = pg.mkPen(color=(255, 0, 0), width=5)#, style=QtCore.Qt.DashLine)
-    #     self.plot_graph.clear()
-    #     self.plot_graph.plotItem.setLogMode(False, True)
-    #     self.plot_graph.plot(xx, yy, pen=pen)
-    #     self.plot_graph.plotItem.setLogMode(False, True)
+    
 
     #self.plot_graph.plotItem.setLogMode(False, True)
  
