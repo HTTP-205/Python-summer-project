@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QLabel, QLineEdit, QMainWi
 )
 toggle = False
 
-#calc.lcm():
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -47,6 +48,9 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(fWidget)
         self.plot_graph.setBackground("w")
 
+
+    #window instance ("self.w", which is the settings window) creating and hiding window
+
     def changePara(self, checked):
         if self.w.isVisible():
             self.w.hide()
@@ -80,6 +84,7 @@ class MainWindow(QMainWindow):
         self.tableWidget.setItem(0,2, QTableWidgetItem("Intensity"))
         infile = 'simSpectrum_table.txt'
         global toggle
+        #for each of the table, it puts in correct row and col
         if toggle == True:
             Emission, Energy, Intensity = np.loadtxt (infile, dtype='str', unpack=True)
             i = 1
@@ -99,20 +104,22 @@ class SettingsWindow(QWidget): #switch to MainWindow(QMainWindow) to test
         self.setWindowTitle("Change Parameters")
 
         mLayout = QVBoxLayout()
+        
+        # ------- Making gui function -------------
 
         #row 1
         r1Layout = QHBoxLayout()
         r1c1Layout = QVBoxLayout()
-        Sbutton = QPushButton("Simulate!")
+        Sbutton = QPushButton("Simulate!") #creates button with name "Simulate!"
         Sbutton.setCheckable(False)
         Sbutton.clicked.connect(self.simulate) #sends signal to simulate
-        r1c1Layout.addWidget(Sbutton)
+        r1c1Layout.addWidget(Sbutton) #adds to the row widget
         Pbutton = QPushButton("Plot!")
         Pbutton.setCheckable(False)
         Pbutton.clicked.connect(self.plot) #sends signal to plot
         r1c1Layout.addWidget(Pbutton)
         r1Layout.addLayout(r1c1Layout)
-        mLayout.addLayout(r1Layout)
+        mLayout.addLayout(r1Layout) #finally adds it all to the main, vert layout
         
         #row 2
         r2Layout = QHBoxLayout()
